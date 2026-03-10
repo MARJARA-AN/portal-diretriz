@@ -1,217 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DIRETRIZ ESTÚDIO E LUZ</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    
-    <style>
-        :root {
-            --bege-claro: #F5F2EE;
-            --bege-medio: #D9C8B4;
-            --taupe: #8C7961;
-            --marrom: #593E1C;
-            --branco: #FFFFFF;
-        }
-
-        html, body { 
-            height: 100%; 
-            margin: 0; 
-            padding: 0; 
-            background-color: var(--bege-claro);
-            overflow-x: hidden;
-        }
-
-        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .hidden { display: none !important; }
-
-        #view-login { 
-            display: grid;
-            place-items: center; 
-            align-content: center;
-            width: 100vw;
-            height: 100vh;
-            padding: 20px;
-        }
-
-        .login-wrapper {
-            width: 100%;
-            max-width: 350px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .titulo-login {
-            text-align: center;
-            margin-bottom: 25px;
-            color: var(--marrom);
-        }
-        .titulo-login h1 { margin: 0; font-size: 22px; letter-spacing: 1px; text-transform: uppercase; }
-        .titulo-login p { margin: 5px 0 0 0; font-size: 14px; color: var(--taupe); font-style: italic; }
-
-        .login-card { 
-            background: var(--branco); 
-            padding: 35px 30px; 
-            border-radius: 25px; 
-            border: 1px solid var(--bege-medio); 
-            width: 100%; 
-            box-shadow: 0 15px 35px rgba(89, 62, 28, 0.1);
-            text-align: center;
-        }
-
-        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid var(--bege-medio); border-radius: 12px; font-size: 16px; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--marrom); }
-        .btn { width: 100%; padding: 16px; background: var(--marrom); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 15px; font-size: 14px; }
-
-        header { background: #fff; padding: 12px 5%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--bege-medio); position: sticky; top: 0; z-index: 100; }
-        .profile-img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--bege-medio); background: #eee; }
-        
-        nav { display: flex; background: #fff; border-bottom: 1px solid var(--bege-medio); padding: 0 5%; overflow-x: auto; gap: 10px; }
-        nav button { padding: 15px 8px; border: none; background: none; color: var(--taupe); font-weight: 600; font-size: 11px; text-transform: uppercase; white-space: nowrap; border-bottom: 3px solid transparent; cursor: pointer; }
-        nav button.active { color: var(--marrom); border-bottom: 3px solid var(--marrom); }
-
-        .container { padding: 20px 5%; max-width: 900px; margin: auto; }
-        .card { background: #fff; border-radius: 15px; padding: 20px; margin-bottom: 15px; border: 1px solid var(--bege-medio); }
-        
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .stat-box { background: var(--marrom); color: white; padding: 15px; border-radius: 12px; text-align: center; }
-        .stat-box strong { display: block; font-size: 20px; }
-
-        .chart-area { display: flex; align-items: flex-end; gap: 8px; height: 150px; margin: 30px 0 60px 0; border-bottom: 2px solid var(--bege-medio); overflow-x: auto; padding-bottom: 5px;}
-        .bar-wrap { flex: 1; min-width: 50px; display: flex; flex-direction: column; align-items: center; position: relative; }
-        .bar { width: 60%; background: var(--marrom); border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.5s; position: relative;}
-        .bar-value { position: absolute; top: -20px; font-size: 10px; font-weight: bold; width: 100%; text-align: center; color: var(--marrom); }
-        .bar-name { position: absolute; bottom: -55px; font-size: 9px; text-align: center; font-weight: bold; width: 100%; line-height: 1.1; height: 45px; display: flex; align-items: center; justify-content: center;}
-
-        .grid-freq { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin-top: 10px; }
-        .dot { padding: 9px 0; font-size: 10px; border: 1px solid var(--bege-medio); border-radius: 5px; text-align: center; cursor: pointer; font-weight: bold; }
-        .dot.falta { background: #ffcdd2; color: #c62828; }
-        .dot.presenca { background: #c8e6c9; color: #2e7d32; }
-        .dot.selected { background: var(--taupe); color: white; border-color: var(--marrom); }
-
-        .quiz-item { border-left: 3px solid var(--bege-medio); padding: 15px; margin-bottom: 15px; background: #fcfcfc; }
-        .resumo-quiz { font-size: 12px; color: var(--taupe); background: #fdfdfd; padding: 8px; border-radius: 8px; margin-top: 5px; border: 1px solid #eee; }
-        .opt-builder { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
-        .opt-builder input[type="text"] { margin: 0; padding: 8px; }
-
-        @media (max-width: 480px) { .stat-grid { grid-template-columns: 1fr; } }
-    </style>
-</head>
-<body>
-
-<div id="view-login">
-    <div class="login-wrapper">
-        <div class="titulo-login">
-            <h1>DIRETRIZ, ESTÚDIO E LUZ</h1>
-            <p>Curso de fotografia profissional</p>
-        </div>
-        <div class="login-card">
-            <h2 style="margin:0 0 5px 0; font-weight:400; color: var(--marrom); letter-spacing: 1px;">PORTAL</h2>
-            <input type="text" id="user" placeholder="Usuário">
-            <input type="password" id="pass" placeholder="Senha">
-            <button class="btn" onclick="execLogin()">Entrar agora</button>
-            <p id="error" style="color:red; font-size:11px; display:none; margin-top:15px; font-weight:bold;">Acesso negado.</p>
-        </div>
-    </div>
-</div>
-
-<div id="portal" class="hidden">
-    <header>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <img id="h-foto" class="profile-img" src="" onerror="this.src='https://via.placeholder.com/50?text=U'">
-            <span id="h-nome" style="font-weight:bold; font-size:15px;">Olá</span>
-        </div>
-        <button onclick="location.reload()" style="background:var(--bege-claro); border:1px solid var(--bege-medio); padding:7px 15px; border-radius:8px; font-size:11px; color:var(--marrom); font-weight:bold;">SAIR</button>
-    </header>
-
-    <nav id="nav-aluno">
-        <button onclick="tab('dash')" id="btn-dash" class="active">Painel</button>
-        <button onclick="tab('materiais')" id="btn-materiais">Materiais</button>
-        <button onclick="tab('perfil')" id="btn-perfil">Meu Perfil</button>
-    </nav>
-
-    <nav id="nav-admin" class="hidden">
-        <button onclick="tab('adm-dash')" id="btn-adm-dash">Início</button>
-        <button onclick="tab('adm-gestao')" id="btn-adm-gestao">Alunos</button>
-        <button onclick="tab('adm-post')" id="btn-adm-post">Postar Conteúdo</button>
-    </nav>
-
-    <div class="container">
-        <section id="s-dash">
-            <div class="stat-grid">
-                <div class="stat-box"><small>Ranking Geral</small><strong id="u-rank">--</strong></div>
-                <div class="stat-box"><small>Presença</small><strong id="u-freq">100%</strong></div>
-            </div>
-            
-            <div class="card">
-                <h3>Meu Desempenho em Quizzes</h3>
-                <p style="font-size: 11px; color: var(--taupe); margin-top: -10px;">Gráfico de barras: Posição no Ranking (Menor é melhor) | Texto: Pontuação</p>
-                <div class="chart-area" id="aluno-chart"></div>
-            </div>
-
-            <div id="quiz-pendente-area"></div>
-        </section>
-
-        <section id="s-materiais" class="hidden">
-            <div id="lista-materiais-aluno"></div>
-        </section>
-
-        <section id="s-perfil" class="hidden">
-            <div class="card">
-                <h3>Dados Pessoais</h3>
-                <input type="file" accept="image/*" onchange="processarFoto(this)">
-                <input type="text" id="c-end" placeholder="Endereço">
-                <input type="text" id="c-social" placeholder="Instagram">
-                <input type="text" id="c-tel" placeholder="Telefone">
-                <button class="btn" onclick="salvarPerfil()">Atualizar</button>
-            </div>
-        </section>
-
-        <section id="s-adm-dash" class="hidden">
-            <div class="stat-grid">
-                <div class="stat-box" style="background:#2e7d32"><small>Total Pago</small><strong id="adm-total-cash">R$ 0</strong></div>
-                <div class="stat-box" style="background:var(--taupe)"><small>Frequência Turma</small><strong id="adm-total-freq">0%</strong></div>
-            </div>
-            <div class="card">
-                <h3>Ranking Geral de Pontos</h3>
-                <div class="chart-area" id="adm-chart"></div>
-                <button class="btn" onclick="exportarExcel()" style="background:#2e7d32">Exportar Dados Alunos (CSV)</button>
-            </div>
-        </section>
-
-        <section id="s-adm-gestao" class="hidden">
-            <div id="lista-gestao-alunos"></div>
-        </section>
-
-        <section id="s-adm-post" class="hidden">
-            <div class="card">
-                <h3>Criar Aula/Material</h3>
-                <input type="text" id="p-titulo" placeholder="Título da Aula">
-                <input type="text" id="p-link" placeholder="Link (Drive/YouTube)">
-                <div style="margin: 20px 0; border-top: 1px solid var(--bege-medio); padding-top: 10px;">
-                    <h4 style="color: var(--taupe);">Quiz</h4>
-                    <div id="pergunta-builder"></div>
-                    <button class="btn" style="background:var(--bege-medio); color:var(--marrom);" onclick="addPerguntaAdmin()">+ Nova Pergunta</button>
-                </div>
-                <button class="btn" onclick="publicarConteudo()">Publicar Conteúdo</button>
-            </div>
-            <div class="card">
-                <h3>Conteúdos Publicados (Apagar)</h3>
-                <div id="lista-aulas-adm"></div>
-            </div>
-        </section>
-    </div>
-</div>
-
 <script>
-    // --- CONFIGURAÇÃO DO FIREBASE (SUBSTITUA PELOS SEUS DADOS) ---
+    // --- ATENÇÃO: PREENCHA EXATAMENTE COM OS DADOS DO SEU FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyAv_AZR3SyLicdEmlkO4ewaCDOO4R7Uaag",
   authDomain: "portaldiretriz-1ec00.firebaseapp.com",
-  databaseURL: "https://portaldiretriz-1ec00-default-rtdb.firebaseio.com",
+  databaseURL: "https://portaldiretriz-1ec00-default-rtdb.firebaseio.com/",
   projectId: "portaldiretriz-1ec00",
   storageBucket: "portaldiretriz-1ec00.firebasestorage.app",
   messagingSenderId: "685027893199",
@@ -219,253 +11,45 @@
   measurementId: "G-H96S5NF5M4"
     };
 
+    // Inicialização
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    // Lista oficial de alunos
     const ALUNOS_IDS = ['herto', 'bruno', 'elisabelle', 'elisabeth', 'beatriz', 'eglany', 'flavia', 'patricia'];
     let db = { alunos: {}, aulas: [] };
     let logado = "";
-    let r_temporarias = {};
 
-    // Sincroniza em tempo real com o Banco de Dados
+    // ESSA FUNÇÃO ABAIXO É O QUE FAZ APARECER OS ALUNOS
     database.ref('diretriz_db').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
             db = data;
+            console.log("Dados carregados com sucesso!");
         } else {
-            // Inicialização se o banco estiver vazio
+            // Se o banco estiver vazio, ele cria os alunos pela primeira vez
+            console.log("Banco vazio, criando estrutura inicial...");
             ALUNOS_IDS.forEach(id => {
                 db.alunos[id] = { pts: 0, fin: { m1: 0, m2: 0, m3: 0 }, faltas: [], foto: '', cad: {end:'', social:'', tel:''}, resp: {}, historico_quiz: [] };
             });
-            save();
+            database.ref('diretriz_db').set(db);
         }
     });
 
-    function save() {
-        database.ref('diretriz_db').set(db);
-    }
-
+    // Função de Login (Verifique se as senhas estão certas aqui)
     function execLogin() {
         const u = document.getElementById('user').value.toLowerCase().trim();
         const p = document.getElementById('pass').value;
-        if(u === 'marj' && p === '12345') entrar('admin');
-        else if(db.alunos[u] && p === '1234') entrar(u);
-        else document.getElementById('error').style.display = 'block';
-    }
-
-    function entrar(tipo) {
-        logado = tipo;
-        document.getElementById('view-login').style.display = 'none';
-        document.getElementById('portal').classList.remove('hidden');
-        if(tipo === 'admin') {
-            document.getElementById('nav-admin').classList.remove('hidden');
-            document.getElementById('nav-aluno').classList.add('hidden');
-            tab('adm-dash');
+        
+        if(u === 'marj' && p === '12345') {
+            entrar('admin');
+        } else if(db.alunos && db.alunos[u] && p === '1234') {
+            entrar(u);
         } else {
-            const a = db.alunos[tipo];
-            document.getElementById('h-nome').innerText = "Olá, " + tipo;
-            document.getElementById('h-foto').src = a.foto || '';
-            document.getElementById('c-end').value = a.cad.end || '';
-            document.getElementById('c-social').value = a.cad.social || '';
-            document.getElementById('c-tel').value = a.cad.tel || '';
-            tab('dash');
+            document.getElementById('error').style.display = 'block';
+            console.log("Falha no login: Usuário ou senha incorretos.");
         }
     }
-
-    function tab(id) {
-        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-        document.getElementById('s-'+id).classList.remove('hidden');
-        if(document.getElementById('btn-'+id)) document.getElementById('btn-'+id).classList.add('active');
-        
-        if(id === 'dash') renderDash();
-        if(id === 'adm-dash') renderAdmDash();
-        if(id === 'adm-gestao') renderGestao();
-        if(id === 'adm-post') renderAulasAdm();
-        if(id === 'materiais') renderAulasAluno();
-    }
-
-    function renderDash() {
-        const a = db.alunos[logado];
-        document.getElementById('u-freq').innerText = ((16-(a.faltas?a.faltas.length:0))/16*100).toFixed(0) + "%";
-        const sortedGlobal = Object.keys(db.alunos).sort((x,y) => db.alunos[y].pts - db.alunos[x].pts);
-        document.getElementById('u-rank').innerText = (sortedGlobal.indexOf(logado)+1) + "º";
-        const chartArea = document.getElementById('aluno-chart');
-        chartArea.innerHTML = "";
-        
-        if(a.historico_quiz && a.historico_quiz.length > 0) {
-            let resumoAulas = {};
-            a.historico_quiz.forEach(h => { resumoAulas[h.aula] = (resumoAulas[h.aula] || 0) + h.pontos; });
-            Object.keys(resumoAulas).forEach(titulo => {
-                const ptsNoQuizz = resumoAulas[titulo];
-                const alturaBarra = Math.min((ptsNoQuizz / 100) * 100, 100);
-                chartArea.innerHTML += `<div class="bar-wrap"><div class="bar" style="height:${alturaBarra}%"><div class="bar-value">${ptsNoQuizz} pts</div></div><div class="bar-name">${titulo.substring(0,10)}...</div></div>`;
-            });
-        } else { chartArea.innerHTML = "<p style='font-size:12px; color:gray; width:100%; text-align:center;'>Nenhum quiz realizado.</p>"; }
-
-        const area = document.getElementById('quiz-pendente-area');
-        area.innerHTML = "<h3>Quizzes Disponíveis</h3>";
-        (db.aulas || []).forEach((aula, aIdx) => {
-            if(!aula.quiz || aula.quiz.length === 0 || (a.resp && a.resp[aula.id])) return;
-            let qs = aula.quiz.map((q, qIdx) => {
-                let tempSel = r_temporarias[aula.id] ? r_temporarias[aula.id][qIdx] : null;
-                return `<div style="margin-top:10px; border-top: 1px solid #eee; padding-top:5px;" id="q-cont-${aula.id}-${qIdx}">
-                    <p style="font-size:13px; font-weight:bold;">${q.p}</p>
-                    ${q.opts.map((opt, oIdx) => `<button class="dot ${tempSel === oIdx ? 'selected' : ''}" style="width:100%; margin:3px 0; background:${tempSel === oIdx ? '' : 'white'};" onclick="selecionarOpcao('${aula.id}', ${qIdx}, ${oIdx})">${opt}</button>`).join('')}
-                </div>`;
-            }).join('');
-            area.innerHTML += `<div class="card" id="card-quiz-${aula.id}"><strong>Aula: ${aula.titulo}</strong>${qs}<button class="btn" onclick="enviarQuiz(${aIdx})">ENVIAR RESPOSTAS</button></div>`;
-        });
-    }
-
-    function selecionarOpcao(aulaId, qIdx, oIdx) {
-        if(!r_temporarias[aulaId]) r_temporarias[aulaId] = {};
-        r_temporarias[aulaId][qIdx] = oIdx;
-        const container = document.getElementById(`q-cont-${aulaId}-${qIdx}`);
-        const botoes = container.querySelectorAll('.dot');
-        botoes.forEach((btn, idx) => {
-            if(idx === oIdx) { btn.classList.add('selected'); btn.style.background = ''; }
-            else { btn.classList.remove('selected'); btn.style.background = 'white'; }
-        });
-    }
-
-    function enviarQuiz(aIdx) {
-        const aula = db.aulas[aIdx];
-        const aluno = db.alunos[logado];
-        const respostasDadas = r_temporarias[aula.id];
-        if(!respostasDadas || Object.keys(respostasDadas).length < aula.quiz.length) return alert("Responda todas!");
-        let totalGanhos = 0;
-        if(!aluno.historico_quiz) aluno.historico_quiz = [];
-        aula.quiz.forEach((q, qIdx) => {
-            const oIdx = respostasDadas[qIdx];
-            let acerto = (oIdx == q.correct);
-            let pts = acerto ? 10 : 0;
-            totalGanhos += pts;
-            aluno.historico_quiz.push({ aula: aula.titulo, pergunta: q.p, resposta_dada: q.opts[oIdx], acerto: acerto, pontos: pts });
-        });
-        aluno.pts += totalGanhos;
-        if(!aluno.resp) aluno.resp = {};
-        aluno.resp[aula.id] = true;
-        delete r_temporarias[aula.id];
-        save();
-        alert(`Enviado! +${totalGanhos} pts.`);
-        renderDash();
-    }
-
-    function renderAulasAluno() {
-        document.getElementById('lista-materiais-aluno').innerHTML = "<h3>Materiais</h3>" + (db.aulas || []).map(a => `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><span>${a.titulo}</span><button class="btn" style="width:auto; padding:5px 15px;" onclick="window.open('${a.link}')">ABRIR</button></div>`).join('');
-    }
-
-    function renderAdmDash() {
-        let cash = 0, flts = 0;
-        Object.keys(db.alunos).forEach(k => {
-            const a = db.alunos[k];
-            cash += (Number(a.fin.m1) + Number(a.fin.m2) + Number(a.fin.m3));
-            flts += a.faltas ? a.faltas.length : 0;
-        });
-        document.getElementById('adm-total-cash').innerText = "R$ " + cash;
-        document.getElementById('adm-total-freq').innerText = (((ALUNOS_IDS.length * 16 - flts) / (ALUNOS_IDS.length * 16)) * 100).toFixed(0) + "%";
-        const sorted = Object.keys(db.alunos).sort((x,y) => db.alunos[y].pts - db.alunos[x].pts);
-        const chart = document.getElementById('adm-chart');
-        chart.innerHTML = "";
-        const max = Math.max(...sorted.map(k => db.alunos[k].pts), 1);
-        sorted.forEach(k => {
-            chart.innerHTML += `<div class="bar-wrap"><div class="bar" style="height:${(db.alunos[k].pts/max)*100}%"><div class="bar-value">${db.alunos[k].pts}</div></div><div class="bar-name">${k.toUpperCase()}</div></div>`;
-        });
-    }
-
-    function renderGestao() {
-        const area = document.getElementById('lista-gestao-alunos');
-        area.innerHTML = "<h3>Gestão de Alunos</h3>";
-        Object.keys(db.alunos).forEach(k => {
-            const a = db.alunos[k];
-            let dots = "";
-            for(let i=0; i<16; i++) dots += `<div class="dot ${(a.faltas && a.faltas.includes(i))?'falta':'presenca'}" onclick="toggleFalta('${k}', ${i})">${i+1}</div>`;
-            let resps = (a.historico_quiz || []).map(r => `<span style="color:${r.acerto?'green':'red'}">${r.acerto?'[V]':'[X]'}</span>`).join(' ');
-            area.innerHTML += `<div class="card"><strong>${k.toUpperCase()}</strong><div class="grid-freq">${dots}</div><div class="resumo-quiz">${resps || 'Nenhum'}</div><div style="display:flex; gap:5px; margin-top:10px;"><input type="number" value="${a.fin.m1}" onchange="atuFin('${k}','m1',this.value)" placeholder="M1"><input type="number" value="${a.fin.m2}" onchange="atuFin('${k}','m2',this.value)" placeholder="M2"><input type="number" value="${a.fin.m3}" onchange="atuFin('${k}','m3',this.value)" placeholder="M3"></div><button onclick="resetarQuizAluno('${k}')" style="margin-top:10px; font-size:10px; color:red; border:none; background:none; cursor:pointer;">Resetar Quizzes</button></div>`;
-        });
-    }
-
-    function toggleFalta(k, i) {
-        if(!db.alunos[k].faltas) db.alunos[k].faltas = [];
-        const f = db.alunos[k].faltas;
-        if(f.includes(i)) db.alunos[k].faltas = f.filter(x => x !== i);
-        else f.push(i);
-        save(); renderGestao();
-    }
-
-    function atuFin(k, m, v) { db.alunos[k].fin[m] = v; save(); }
-
-    function renderAulasAdm() {
-        document.getElementById('lista-aulas-adm').innerHTML = (db.aulas && db.aulas.length) ? db.aulas.map((a, i) => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><div><strong>${a.titulo}</strong></div><button onclick="apagarAula(${i})" style="color:red;">APAGAR</button></div>`).join('') : "Nenhum conteúdo.";
-    }
-
-    function apagarAula(index) { if(confirm("Apagar?")) { db.aulas.splice(index, 1); save(); renderAulasAdm(); } }
-
-    function addPerguntaAdmin() {
-        const id = Date.now();
-        document.getElementById('pergunta-builder').insertAdjacentHTML('beforeend', `
-            <div id="pb-${id}" class="quiz-item">
-                <input type="text" class="q-p" placeholder="Pergunta">
-                <div class="opt-builder"><input type="radio" name="correct-${id}" value="0" checked> <input type="text" class="q-o" placeholder="Opção 1"></div>
-                <div class="opt-builder"><input type="radio" name="correct-${id}" value="1"> <input type="text" class="q-o" placeholder="Opção 2"></div>
-                <div class="opt-builder"><input type="radio" name="correct-${id}" value="2"> <input type="text" class="q-o" placeholder="Opção 3"></div>
-                <button onclick="this.parentElement.remove()" style="font-size:10px; color:red;">Remover</button>
-            </div>`);
-    }
-
-    function publicarConteudo() {
-        const t = document.getElementById('p-titulo').value;
-        if(!t) return alert("Título!");
-        let quizzes = [];
-        document.querySelectorAll('.quiz-item').forEach(qi => {
-            const p = qi.querySelector('.q-p').value;
-            const opts = Array.from(qi.querySelectorAll('.q-o')).map(o => o.value);
-            const correct = qi.querySelector('input[type="radio"]:checked').value;
-            if(p && opts[0]) quizzes.push({ p, opts, correct: parseInt(correct) });
-        });
-        if(!db.aulas) db.aulas = [];
-        db.aulas.push({ id: 'a_'+Date.now(), titulo: t, link: document.getElementById('p-link').value, quiz: quizzes });
-        save(); alert("Publicado!");
-        document.getElementById('p-titulo').value = ""; document.getElementById('p-link').value = "";
-        document.getElementById('pergunta-builder').innerHTML = "";
-        renderAulasAdm();
-    }
-
-    function processarFoto(el) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 100; canvas.height = 100;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, 100, 100);
-                db.alunos[logado].foto = canvas.toDataURL('image/jpeg', 0.5);
-                document.getElementById('h-foto').src = db.alunos[logado].foto;
-                save(); 
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(el.files[0]);
-    }
-
-    function salvarPerfil() {
-        const a = db.alunos[logado];
-        a.cad.end = document.getElementById('c-end').value;
-        a.cad.social = document.getElementById('c-social').value;
-        a.cad.tel = document.getElementById('c-tel').value;
-        save(); alert("Perfil atualizado!");
-    }
-
-    function resetarQuizAluno(alunoId) {
-        if(confirm(`Resetar quizzes de ${alunoId}?`)) {
-            db.alunos[alunoId].resp = {};
-            db.alunos[alunoId].historico_quiz = [];
-            db.alunos[alunoId].pts = 0;
-            save(); renderGestao();
-        }
-    }
+    
+    // ... (o resto das funções 'entrar', 'tab', etc, permanecem iguais)
 </script>
-</body>
-</html>
