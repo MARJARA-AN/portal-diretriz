@@ -3,6 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Diretriz - Oficial</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        :root { --primary: #1a2a6c; --secondary: #b21f1f; --accent: #fdbb2d; --text: #333; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
+        
+        /* LOGIN */
+        .login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to right, #1a2a6c, #b21f1f, #fdbb2d); }
+        .login-card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 320px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        /* PORTAL */
+        #main-portal { display: none; }
+        header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .nav-tabs { display: flex; background: white; padding: 10px; gap: 10px; overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tab-link { padding: 10px 20px; cursor: pointer; border-radius: 20px; font-weight: 500; white-space: nowrap; transition: 0.3s; color: var(--primary); }
+        .tab-link.active { background: var(--primary); color: white; }
+        
+        .content { padding: 20px; max-width: 1000px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; display: none; }
+        .card.active { display: block; }
+        
+        .admin-section { border-left: 5px solid var(--secondary); display: none; }
+        .student-list { list-style: none; padding: 0; }
+        .student-item { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; align-items: center; }
+        .badge { background: #e8f0fe; color: #1967d2; padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-page" class="login-screen">
+        <div class="login-card">
+            <h2 style="color: var(--primary); margin-top: 0;">Portal Diretriz</h2>
+            <p style="font-size: 14px; color: #666;">Acesse sua área do aluno</p>
+            <input type="text" id="user" placeholder="Usuário">
+            <input type="password" id="pass" placeholder="Senha">
+            <button onclick="auth()">Entrar no Portal</button>
+            <p id="error" style="color: red; display: none; font-size: 13px; margin-top: 15px;">Acesso negado!</p>
+        </div>
+    </div>
+
+    <div id="main-portal">
+        <header>
+            <div style="font-weight: bold; font-size: 1.2rem;">DIRETRIZ</div>
+            <div id="user-display" style="font-size: 14px;"></div>
+        </header>
+
+        <nav class="nav-tabs">
+            <div class="tab-link active" onclick="showTab('inicio')">🏠 Início</div>
+            <div class="tab-link" onclick="showTab('materiais')">📚 Materiais</div>
+            <div class="tab-link" onclick="showTab('financeiro')">💰 Financeiro</div>
+            <div id="tab-admin" class="tab-link admin-section" onclick="showTab('gestao')">⚙️ GESTÃO</div>
+            <div class="tab-link" onclick="location.reload()" style="color: var(--secondary);">🚪 Sair</div>
+        </nav>
+
+        <main class="content">
+            <div id="inicio" class="card active">
+                <h3>Resumo de Atividades</h3>
+                <p>Olá! Bem-vindo ao seu painel. Confira suas últimas atualizações.</p>
+                <div style="background: #fdf2f2; padding: 15px; border-radius: 8px; color: #b21f1f;">
+                    <strong>Aviso:</strong> A próxima aula presencial será no sábado às 09h.
+                </div>
+            </div>
+
+            <div id="materiais" class="card">
+                <h3>Materiais de Estudo</h3>
+                <p>Acesse os PDFs e links das aulas passadas.</p>
+                <button style="background: #eee; color: #333; margin-bottom: 10px;">Baixar Apostila Módulo 1</button>
+                <button style="background: #eee; color: #333;">Link da Vídeo-Aula</button>
+            </div>
+
+            <div id="financeiro" class="card">
+                <h3>Situação Financeira</h3>
+                <div id="fin-info">Carregando dados...</div>
+            </div>
+
+            <div id="gestao" class="card admin-section">
+                <h3>Painel de Controle - Professora Marj</h3>
+                <p>Lista de Alunos e Faltas:</p>
+                <ul id="lista-alunos" class="student-list"></ul>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO DO SEU FIREBASE
+        const firebaseConfig = {
+            apiKey: "COLE_SUA_API_KEY_AQUI",
+            authDomain: "SEU_PROJETO.firebaseapp.com",
+            databaseURL: "COLE_O_LINK_DO_REALTIME_DATABASE_AQUI",
+            projectId: "SEU_PROJETO",
+            storageBucket: "SEU_PROJETO.appspot.com",
+            messagingSenderId: "SEU_ID",
+            appId: "SEU_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const dbRef = firebase.database().ref('diretriz_db');
+        let portalData = {};
+
+        // Sincronização em tempo real
+        dbRef.on('value', (snap) => {
+            portalData = snap.val() || { alunos: {} };
+            renderAdmin();
+        });
+
+        function auth() {
+            const u = document.getElementById('user').value.toLowerCase().trim();
+            const p = document.getElementById('pass').value;
+            
+            if(u === 'marj' && p === '12345') {
+                document.getElementById('login-page').style.display = 'none';
+                document.getElementById('main-portal').style.display = 'block';
+                document.querySelectorAll('.admin-section').forEach(e => e.style.display = 'block');
+                document.getElementById('user-display').innerText = "Adm: Marj";
+            } else if(['herto', 'bruno', 'elisabelle', 'elisabeth', 'beatriz', 'eglany', 'flavia', 'patricia'].includes(u) && p === '1234') {
+                document.getElementById('login-page').style.display = 'none';
+                document.getElementById('main-portal').style.display = 'block';
+                document.getElementById('user-display').innerText = "Aluno: " + u;
+                loadStudentData(u);
+            } else {
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function showTab(id) {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        function renderAdmin() {
+            const lista = document.getElementById('lista-alunos');
+            lista.innerHTML = "";
+            const ids = ['herto', 'bruno', 'elisabelle', 'elisabeth', 'beatriz', 'eglany', 'flavia', 'patricia'];
+            
+            ids.forEach(id => {
+                const info = portalData.alunos[id] || { faltas: 0 };
+                lista.innerHTML += `
+                    <li class="student-item">
+                        <span>${id.toUpperCase()}</span>
+                        <span class="badge">Faltas: ${info.faltas}</span>
+                    </li>`;
+            });
+        }
+
+        function loadStudentData(user) {
+            const fin = document.getElementById('fin-info');
+            fin.innerHTML = `<p>Status: <strong>Mensalidade em dia ✅</strong></p><p>Próximo vencimento: 10/04</p>`;
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Diretriz - Alunos</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -59,7 +222,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyAv_AZR3SyLicdEmlkO4ewaCDOO4R7Uaag",
   authDomain: "portaldiretriz-1ec00.firebaseapp.com",
-  databaseURL: "https://portaldiretriz-1ec00-default-rtdb.firebaseio.com/",
+  databaseURL: "https://portaldiretriz-1ec00-default-rtdb.firebaseio.com",
   projectId: "portaldiretriz-1ec00",
   storageBucket: "portaldiretriz-1ec00.firebasestorage.app",
   messagingSenderId: "685027893199",
